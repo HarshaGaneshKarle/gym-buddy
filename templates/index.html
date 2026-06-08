@@ -13,6 +13,7 @@
             <h2>Join the Community</h2>
             <input type="text" id="name" placeholder="Your Name">
             <input type="text" id="city" placeholder="Your City">
+            <input type="text" id="zipcode" placeholder="Your Area Zipcode">          
             <select id="goal">
                 <option value="cut">Cut (Lose Fat)</option>
                 <option value="bulk">Bulk (Build Muscle)</option>
@@ -23,11 +24,18 @@
                 <option value="intermediate">Intermediate</option>
                 <option value="advanced">Advanced</option>
             </select>
-            <button onclick="addBuddy()">Find My Buddy</button>
+            <select id="gender">
+                <option value="male">Male</option>
+                <option value="female">Female</option>
+            </select>
+            <input type="text" id="contact" placeholder="WhatsApp number or Instagram @handle">
+            <button onclick="addBuddy()">Join</button>
         </div>
 
         <div class="buddies-box">
             <h2>People Looking for Gym Buddies</h2>
+            <input type="text" id="filter-city" placeholder="Filter by city...">
+            <button onclick="filterBuddies()">Search City</button>
             <div id="buddyList"></div>
         </div>
 
@@ -39,25 +47,78 @@
             let city = document.getElementById('city').value;
             let goal = document.getElementById('goal').value;
             let level = document.getElementById('level').value;
+            let gender = document.getElementById('gender').value;
+            let contact = document.getElementById('contact').value;
+            let zipcode = document.getElementById('zipcode').value;
+            let date = new Date().toLocaleDateString();
+
+            if (!name || !city || !contact || !zipcode) {
+                alert('Please fill in all fields!');
+                return;
+            }
+
             await fetch('/add', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ name, city, goal, level })
+                body: JSON.stringify({ name, city,zipcode, goal, level, gender, contact, date})
             });
             loadBuddies();
         }
-
+        async function filterBuddies() {
+            let response = await fetch('/buddies');
+            let buddies = await response.json();
+            
+            let filterCity = document.getElementById('filter-city').value.toLowerCase().trim();
+            
+            if (filterCity) {
+                buddies = buddies.filter(b => 
+                b.city.toLowerCase().trim().includes(filterCity) ||
+                b.zipcode.includes(filterCity)
+            );
+            }
+            let count = buddies.length;
+            let html = `<p style="color:#a8a8b3;font-size:13px;">${count} people found</p>`;
+            
+            buddies.forEach(b => {
+                html += `<div class="buddy-card">
+                    <strong>${b.name}</strong> — ${b.city} — ${b.gender}<br>
+                    Goal: ${b.goal} | Level: ${b.level}<br>
+                    Contact: <span style="color:#e94560">${b.contact}</span><br>
+                    <span style="font-size:11px;color:#555">Joined: ${b.date}</span><br>
+                    <button style="margin-top:8px;padding:6px;font-size:12px;background:#333;width:auto;"
+                        onclick="deleteBuddy(${b.id})">Remove Listing</button>
+                </div>`;
+            });
+        document.getElementById('buddyList').innerHTML = html;
+}
         async function loadBuddies() {
             let response = await fetch('/buddies');
             let buddies = await response.json();
-            let html = '';
+
+            let filterCity = document.getElementById('filter-city').value.toLowerCase();
+            if (filterCity) {
+                buddies = buddies.filter(b => b.city.toLowerCase().includes(filterCity));
+            }
+
+            let count = buddies.length;
+            let html = `<p style="color:#a8a8b3;font-size:13px;">${count} people looking for a gym buddy</p>`;
+
             buddies.forEach(b => {
                 html += `<div class="buddy-card">
-                    <strong>${b.name}</strong> — ${b.city}<br>
-                    Goal: ${b.goal} | Level: ${b.level}
+                    <strong>${b.name}</strong> — ${b.city} (${b.zipcode})— ${b.gender}<br>
+                    Goal: ${b.goal} | Level: ${b.level}<br>
+                    Contact: <span style="color:#e94560">${b.contact}</span><br>
+                    <span style="font-size:11px;color:#555">Joined: ${b.date}</span><br>
+                    <button style="margin-top:8px;padding:6px;font-size:12px;background:#333;width:auto;"
+                        onclick="deleteBuddy(${b.id})">Remove Listing</button>
                 </div>`;
             });
             document.getElementById('buddyList').innerHTML = html;
+        }
+
+        async function deleteBuddy(id) {
+            await fetch('/delete/' + id, { method: 'DELETE' });
+            loadBuddies();
         }
 
         loadBuddies();
