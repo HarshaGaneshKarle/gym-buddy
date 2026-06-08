@@ -15,7 +15,8 @@ def init_db():
                   level TEXT,
                   gender TEXT,
                   contact TEXT,
-                  date TEXT)''')
+                  date TEXT,
+                  pin TEXT)''')
     conn.commit()
     conn.close()
 
@@ -28,9 +29,9 @@ def add_buddy():
     data = request.json
     conn = sqlite3.connect('database.db')
     c = conn.cursor()
-    c.execute("INSERT INTO buddies (name, city, zipcode, goal, level, gender, contact, date) VALUES (?,?,?,?,?,?,?,?)",
-            (data['name'], data['city'], data['zipcode'], data['goal'], data['level'],
-            data['gender'], data['contact'], data['date']))
+    c.execute("INSERT INTO buddies (name, city, zipcode, goal, level, gender, contact, date, pin) VALUES (?,?,?,?,?,?,?,?,?)",
+              (data['name'], data['city'], data['zipcode'], data['goal'], data['level'],
+               data['gender'], data['contact'], data['date'], data['pin']))
     conn.commit()
     conn.close()
     return jsonify({'message': 'Added successfully'})
@@ -44,17 +45,23 @@ def get_buddies():
     conn.close()
     buddies = [{'id':r[0],'name':r[1],'city':r[2],'zipcode':r[3],'goal':r[4],
                 'level':r[5],'gender':r[6],'contact':r[7],'date':r[8]}
-            for r in rows]
+               for r in rows]
     return jsonify(buddies)
 
 @app.route('/delete/<int:id>', methods=['DELETE'])
 def delete_buddy(id):
+    data = request.json
     conn = sqlite3.connect('database.db')
     c = conn.cursor()
-    c.execute("DELETE FROM buddies WHERE id=?", (id,))
-    conn.commit()
+    c.execute("SELECT pin FROM buddies WHERE id=?", (id,))
+    row = c.fetchone()
+    if row and row[0] == data['pin']:
+        c.execute("DELETE FROM buddies WHERE id=?", (id,))
+        conn.commit()
+        conn.close()
+        return jsonify({'message': 'Deleted'})
     conn.close()
-    return jsonify({'message': 'Deleted'})
+    return jsonify({'message': 'Wrong PIN'}), 403
 
 if __name__ == '__main__':
     init_db()

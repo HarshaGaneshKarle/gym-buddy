@@ -29,6 +29,7 @@
                 <option value="female">Female</option>
             </select>
             <input type="text" id="contact" placeholder="WhatsApp number or Instagram @handle">
+            <input type="password" id="pin" placeholder="Create a 4-digit PIN to manage your listing">
             <button onclick="addBuddy()">Join</button>
         </div>
 
@@ -50,9 +51,10 @@
             let gender = document.getElementById('gender').value;
             let contact = document.getElementById('contact').value;
             let zipcode = document.getElementById('zipcode').value;
+            let pin = document.getElementById('pin').value;
             let date = new Date().toLocaleDateString();
 
-            if (!name || !city || !contact || !zipcode) {
+            if (!name || !city || !contact || !zipcode || !pin) {
                 alert('Please fill in all fields!');
                 return;
             }
@@ -60,7 +62,7 @@
             await fetch('/add', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ name, city,zipcode, goal, level, gender, contact, date})
+                body: JSON.stringify({ name, city, zipcode, goal, level, gender, contact, date, pin })
             });
             loadBuddies();
         }
@@ -117,8 +119,21 @@
         }
 
         async function deleteBuddy(id) {
-            await fetch('/delete/' + id, { method: 'DELETE' });
-            loadBuddies();
+            let pin = prompt('Enter your 4-digit PIN to remove your listing:');
+            if (!pin) return;
+            
+            let response = await fetch('/delete/' + id, {
+                method: 'DELETE',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ pin })
+            });
+            
+            let result = await response.json();
+            if (result.message === 'Wrong PIN') {
+                alert('Wrong PIN. Only you can delete your listing.');
+            } else {
+                loadBuddies();
+            }
         }
 
         loadBuddies();
