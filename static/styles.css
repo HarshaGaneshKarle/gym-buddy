@@ -68,3 +68,21 @@ button:hover { background-color: #c73652; }
 .buddy-card strong {
     color: white;
 }
+@media (max-width: 480px) {
+    .container {
+        width: 100%;
+        padding: 15px;
+    }
+    
+    .form-box, .buddies-box {
+        padding: 16px;
+    }
+    
+    h1 {
+        font-size: 22px;
+    }
+    
+    button {
+        font-size: 14px;
+    }
+}
